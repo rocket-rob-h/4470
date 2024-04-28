@@ -1,6 +1,7 @@
 import numpy as np
 from scipy.optimize import fsolve, newton
 from Fluids_Library import *
+from math import *
 
 # Driver Helium properties
 gamma_4 = 1.667
@@ -108,4 +109,72 @@ def EQN(U_2, a_3, gamma_4, P5_P2):
 
 Tailoring15kpa = EQN(U_2, a_3, gamma_4, P5_P2)
 
-print(f"EQN of  system is {Tailoring15kpa:.2f}")
+print(f"EQN of 15 kPa system is {Tailoring15kpa:.2f}")
+
+print()
+print("--Exit Conditions--" * 3)
+print()
+
+# Exit conditions
+mach_from_A_Astar = mach_A_Astar(A_Astar, gamma_2, 10)
+print(f"Mach from A_Astar is {mach_from_A_Astar:.3f}")
+
+P5_Pe = stagnation_pressure_ratio(gamma_1, mach_from_A_Astar)
+print(f"P5_Pe ratio is {P5_Pe:.10f} ratio ")
+
+P_e = Bottom_ratio(P_5,P5_Pe)
+print(f"Exit Pressure P_e is {P_e:.2f} Pa")
+
+T5_Te = stagnation_temperature_ratio(gamma_1, mach_from_A_Astar)
+print(f"Exit Temperature T5_Te ratio is {T5_Te:.3f} ratio")
+
+T_e = Bottom_ratio(T_5,T5_Te)
+print(f"Exit Temperature T_e is {T_e:.2f} K")
+
+
+print()
+print("--Plate Work --" * 3)
+print()
+
+
+theta_deg = np.radians(30)
+beta_weak, beta_strong = solve_beta(mach_from_A_Astar, theta_deg)
+beta_deg = np.degrees(beta_weak)
+print(f"Weak shock beta: {beta_deg:.3f} degrees")
+# print(f"Strong shock beta: {np.degrees(beta_strong):.3f} degrees")
+
+beta_rad = beta_weak
+
+M2_obl_15 = M2_obl(mach_from_A_Astar, beta_deg, theta_deg, g=1.4)
+print(f"Mn_2 oblique {M2_obl_15:.3f}")
+
+rho2_rho1_obl_15 = rho2_rho1_obl(mach_from_A_Astar, beta_deg, g=1.4)
+print(f"rho2_rho1 oblique ratio is {rho2_rho1_obl_15:.2f}")
+
+#density 1
+rho1_obl = Ideal_gas_law_rho(P_e,R_1, T_e)
+print(f"Density rho_1_nozzle, pre oblique is {rho1_obl:.5f} m^3/kg")
+
+rho_2_obl = Top_ratio(rho1_obl, rho2_rho1_obl_15)
+print(f"rho_2_oblique is {rho_2_obl:.5f} m^3/kg")
+
+p2_p1_obl_15 = p2_p1_obl(mach_from_A_Astar, beta_rad, g=1.4)
+print(f"P2_P1 across oblique shock is {p2_p1_obl_15:.3}")
+
+P2 = P_e * p2_p1_obl_15
+print(f"Plate pressure P2 is {P2:.2f} Pa")
+
+
+T_2_T1_obl_15 = T2_T1_obl(mach_from_A_Astar, beta_rad, g=1.4)
+print(f"The T2_T1_oblique ratio is {T_2_T1_obl_15:.2f}")
+
+T_2_obl = Top_ratio(T_e,T_2_T1_obl_15)
+print(f"The T_2_oblique from exit T_e is {T_2_obl:.2f} K")
+
+print()
+
+print(f"Beta weak is {beta_weak:.3f} radians")
+print(f"Beta weak in degrees is {np.degrees(beta_weak):.2f}")
+
+print()
+print("Finished Analysis")
