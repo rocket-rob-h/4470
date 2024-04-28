@@ -1,8 +1,8 @@
 #Preamble
 
 import numpy as np
-from scipy.optimize import fsolve
-from scipy.optimize import newton
+from scipy.optimize import fsolve, newton
+# from scipy.optimize import newton
 
 
 #Initial Conditions
@@ -45,10 +45,10 @@ def Shock_velocity(sound_speed, gamma, P2, P1):
     return sound_speed * np.sqrt ((gamma + 1) / (2 * gamma) * ((P2/P1)-1) + 1 )
 
 def stagnation_pressure_ratio(gamma, Mach):
-    return (1 + ((gamma - 1) / 2) * Mach ** 2) ** (-gamma / (gamma - 1))
+    return (1 + ((gamma - 1) / 2) * Mach ** 2) ** (gamma / (gamma - 1))
 
 def stagnation_temperature_ratio(gamma, Mach):
-    return (1 + ((gamma - 1) / 2) * Mach**2) ** -1
+    return (1 + ((gamma - 1) / 2) * Mach**2)
 
 def Top_ratio(Denominator, Ratio):
     return Denominator * Ratio
@@ -149,6 +149,34 @@ throat_r = (7 / 2 )/ 1000
 
 A_Astar = (np.pi * (exit_r ** 2))/ ((np.pi * (throat_r ** 2)))
 
+
+def mach_A_Astar(A_Astar, gamma, mach_guess):
+    """
+    Find the Mach number for a given area ratio A/A* using the fsolve method.
+    :param A_Astar: Known area ratio A/A*
+    :param gamma: Specific heat ratio (γ)
+    :param mach_guess: Initial guess for the Mach number
+    :return: Mach number corresponding to the given area ratio
+    """
+
+    # Inner function to represent the equation to be solved
+    def equation(M, gamma, A_Astar):
+        term = (2 / (gamma + 1)) * (1 + (gamma - 1) / 2 * M ** 2)
+        return (1 / M) * (term ** ((gamma + 1) / (2 * (gamma - 1)))) - A_Astar
+
+    # Solve the equation
+    mach_number, info, ier, msg = fsolve(equation, mach_guess, args=(gamma, A_Astar), full_output=True)
+    if ier == 1:  # fsolve successfully found a root
+        return mach_number[0]
+    else:
+        raise ValueError(f"Solution did not converge: {msg}")
+
+
+# Find the Mach number for the given area ratio
+# mach = mach_A_Astar(A_Astar_example, gamma, mach_guess)
+
+###########################################################################3
+
 def area_ratio(M, gamma, A_Astar):
     """ Function to calculate the deviation of calculated area ratio from the target. """
     return (1 / M) * ((2 / (gamma + 1) * (1 + (gamma - 1) / 2 * M ** 2)) ** (
@@ -247,8 +275,6 @@ def prandtl_meyer_function(M, gamma):
     """Calculate Prandtl-Meyer function for given Mach number M and specific heat ratio gamma."""
     return np.sqrt((gamma + 1) / (gamma - 1)) * np.arctan(np.sqrt((gamma - 1) * (M**2 - 1) / (gamma + 1))) - np.arctan(np.sqrt(M**2 - 1))
 
-
-
 def p0_p(M, g=1.4):
     """
     Total to static pressure ratio for an isentropic flow.
@@ -258,8 +284,6 @@ def p0_p(M, g=1.4):
     Returns: p0/p
     """
     return (T0_T(M, g))**( g / (g - 1.0) )
-
-
 
 def calculate_EQN(u2, a3, gamma4, p5, p2):
     """
@@ -285,3 +309,87 @@ def calculate_EQN(u2, a3, gamma4, p5, p2):
     denominator = np.sqrt((1 + (gamma4 + 1) / (gamma4 - 1)) * (1 + (gamma4 + 1) / (gamma4 - 1) * p5 / p2))
     EQN = u2 - a3 * (numerator / denominator)
     return EQN
+
+
+
+
+
+
+
+def beta_obl(M1, theta, g=1.4, tol=1.0e-6):
+    sign_beta = np.sign(theta)
+    theta = np.abs(theta)
+    b1 = np.arcsin(1.0 / M1)
+    b2 = b1 * 1.05
+
+    def f_to_solve(beta, M1, theta, g):
+        return theta_obl(M1, beta, g) - theta
+
+    beta_solution = fsolve(f_to_solve, [b1, b2], args=(M1, theta, g), full_output=True, xtol=tol)[0]
+    return sign_beta * beta_solution
+
+def beta_obl2(M1, p2_p1, g=1.4):
+    dum1 = np.sqrt(((g + 1.0) * p2_p1 + (g - 1.0)) / (2.0 * g))
+    return np.arcsin(dum1 / M1)
+
+def theta_obl(M1, beta, g=1.4):
+    m1sb = M1 * np.sin(beta)
+    t1 = (2.0 / np.tan(beta)) * (m1sb ** 2 - 1.0)
+    t2 = (M1 ** 2) * (g + np.cos(2 * beta)) + 2.0
+    return np.arctan2(t1, t2)
+
+def M2_obl(M1, beta, theta, g=1.4):
+    m1sb = M1 * np.sin(beta)
+    numer = 1.0 + ((g - 1.0) / 2.0) * m1sb ** 2
+    denom = g * m1sb ** 2 - (g - 1.0) / 2.0
+    return np.sqrt(numer / (denom * (np.sin(beta - theta) ** 2)))
+
+def rho2_rho1_obl(M1, beta, g=1.4):
+    m1sb = M1 * np.sin(beta)
+    numer = (g + 1.0) * m1sb ** 2
+    denom = 2.0 + (g - 1.0) * m1sb ** 2
+    return numer / denom
+
+def p2_p1_obl(M1, beta, g=1.4):
+    m1sb = M1 * np.sin(beta)
+    return 1.0 + 2.0 * g / (g + 1.0) * (m1sb ** 2 - 1.0)
+
+def T2_T1_obl(M1, beta, g=1.4):
+    p2_p1_ratio = p2_p1_obl(M1, beta, g)
+    rho2_rho1_ratio = rho2_rho1_obl(M1, beta, g)
+    return p2_p1_ratio / rho2_rho1_ratio
+
+def p02_p01_obl(M1, beta, g=1.4):
+    m1sb = M1 * np.sin(beta)
+    t1 = ((g + 1.0) / (2.0 * g * m1sb ** 2 - (g - 1.0))) ** (1.0 / (g - 1.0))
+    t2 = (((g + 1.0) * m1sb ** 2) / (2.0 + (g - 1.0) * m1sb ** 2)) ** (g / (g - 1.0))
+    return t1 * t2
+
+
+############################
+def solve_beta(M1, theta, gamma=1.4):
+    # Function to iterate
+    def f_to_solve(beta, M1, theta, gamma):
+        left_hand_side = np.tan(beta)
+        right_hand_side = (((gamma + 1) * M1**2 * np.sin(beta)**2) /
+                           (2 + (gamma - 1) * M1**2 * np.sin(beta)**2)) * np.tan(beta - theta)
+        return left_hand_side - right_hand_side
+
+    # Weak shock initial guess (close to theta)
+    beta_weak_guess = theta + np.radians(1)  # A small angle above theta
+    # Strong shock initial guess (further from theta)
+    beta_strong_guess = np.pi/2 - np.radians(1)  # Near 90 degrees but within range
+
+    # Solve for weak shock
+    beta_weak_solution = fsolve(f_to_solve, beta_weak_guess, args=(M1, theta, gamma))[0]
+    # Solve for strong shock
+    beta_strong_solution = fsolve(f_to_solve, beta_strong_guess, args=(M1, theta, gamma))[0]
+
+    return beta_weak_solution, beta_strong_solution
+
+# # Example usage
+# M1_example = 2.0
+# theta_example = np.radians(30)
+# beta_weak, beta_strong = solve_beta(M1_example, theta_example)
+# print(f"Weak shock beta: {np.degrees(beta_weak):.2f} degrees")
+# print(f"Strong shock beta: {np.degrees(beta_strong):.2f} degrees")
