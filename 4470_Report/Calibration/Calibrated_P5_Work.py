@@ -11,25 +11,25 @@ kpa15_filename = 'kpa15_data.lvm'
 X_Value, p_st1, p_st2, p_plate, TC1 = np.loadtxt(kpa15_filename, delimiter=',', skiprows=24, usecols=(0, 1, 2, 3, 4), unpack=True)
 
 # Define the time range you are interested in
-time_range = (0.019645, 0.01980)  # Adjust this to the time range you are interested in
+time_range = (0.02, 0.0204)  # Adjust this to the time range you are interested in
 
 # Filter the data to get only the values within the specified time range
 filtered_indices = (X_Value >= time_range[0]) & (X_Value <= time_range[1])
-# filtered_p_st1 = p_st1[filtered_indices]
+filtered_p_st1 = p_st1[filtered_indices]
 filtered_p_st2 = p_st2[filtered_indices]
 
 # Calculate the averages of the filtered values
-# average_p_st1 = np.mean(filtered_p_st1) if filtered_p_st1.size > 0 else float('nan')
+average_p_st1 = np.mean(filtered_p_st1) if filtered_p_st1.size > 0 else float('nan')
 average_p_st2 = np.mean(filtered_p_st2) if filtered_p_st2.size > 0 else float('nan')
 
 # Output the results
-# print(f"Average voltage for p_st1 within the time range {time_range} is: {average_p_st1:.12f}")
+print(f"Average voltage for p_st1 within the time range {time_range} is: {average_p_st1:.12f}")
 print(f"Average voltage for p_st2 within the time range {time_range} is: {average_p_st2:.12f}")
 
 # Plotting for visualization
 plt.figure(figsize=(10, 5))
-plt.xlim(left=0.019350, right=0.01965)
-plt.ylim(bottom=-0.05, top=0.4)
+# plt.xlim(left=0.019350, right=0.01965)
+# plt.ylim(bottom=-0.05, top=0.4)
 # plt.plot(X_Value, p_st1, label='Pressure Sensor 1 (Volts)')
 plt.plot(X_Value, p_st2, label='Pressure Sensor 2 (Volts)')
 plt.axvline(x=time_range[0], color='green', linestyle='--', label='Start of Time Range')
@@ -62,7 +62,7 @@ def get_pressure_values_at_x(x_location):
     return p_st1_at_x, p_st2_at_x
 
 # Example usage
-x_location = 0.0197  # Example x value
+x_location = 0.0202  # Example x value
 p_st1_value, p_st2_value = get_pressure_values_at_x(x_location)
 print(f'Pressure Sensor 1 at x={x_location}: {p_st1_value:.3f} Volts')
 print(f'Pressure Sensor 2 at x={x_location}: {p_st2_value:.3f} Volts')
@@ -73,17 +73,24 @@ print(f'Pressure Sensor 2 at x={x_location}: {p_st2_value:.3f} Volts')
 plt.figure()
 # plt.plot(X_Value, p_st1, label='Pressure Sensor 1 (Volts)')
 plt.plot(X_Value, p_st2, color= 'orange',label='Pressure Sensor 2 (Volts)')
-
 plt.xlabel('Time (s)', fontsize=10)
 plt.ylabel('Pressure (Volts)', fontsize=10)
-plt.title('Shock velocity determination', weight='bold', fontsize=10)
+plt.title('Stagnation Pressure P5 15 kPa', weight='bold', fontsize=10)
 plt.legend(fontsize=8)
-plt.xlim(left=0.0196, right=0.02)
+plt.axvline(x=time_range[0], color='green', linestyle='--', label='Start of Time Range')
+plt.axvline(x=time_range[1], color='red', linestyle='--', label='End of Time Range')
+plt.xlim(left=0.0196, right=0.0208)
 # plt.ylim(bottom=-0.05, top=0.7)
 plt.tick_params(axis='both', which='major', labelsize=8)
 plt.subplots_adjust(top=0.943, bottom=0.095, left=0.13, right=0.945, hspace=0.200, wspace=0.200)
-# plt.savefig("stag finder2.png", format='png', dpi=500)
+plt.savefig("Stagnation P5 15 kPa.png", format='png', dpi=500)
 plt.show()
 
 
 # Average voltage for P5 Experimental
+def Calib15_2(P1,P5):
+    return P1 + 964.6764 * P5
+
+P5_V = average_p_st2
+P5_15_1 = Calib15_2(15,P5_V)
+print(f"The Pressure P5 at 15 Kpa from 2nd sensor is {P5_15_1} kPa")

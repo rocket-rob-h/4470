@@ -6,7 +6,7 @@ kpa15_filename = 'kpa15_data.lvm'
 X_Value, p_st1, p_st2, p_plate, TC1 = np.loadtxt(kpa15_filename, delimiter=',', skiprows=24, usecols=(0, 1, 2, 3, 4), unpack=True)
 
 # Define the time range you are interested in
-time_range = (0.019370, 0.01959)  # Adjust this to the time range you are interested in
+time_range = (0.019370, 0.01959) #  Sensor 2
 
 # Filter the data to get only the values within the specified time range
 filtered_indices = (X_Value >= time_range[0]) & (X_Value <= time_range[1])
